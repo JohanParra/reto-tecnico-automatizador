@@ -1,0 +1,667 @@
+{
+	"info": {
+		"_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+		"name": "Coordinadora - Guías RCE",
+		"description": "Colección de pruebas para el sistema de generación y consulta de guías con Recaudo Contra Entrega (RCE)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{bearer_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"item": [
+		{
+			"name": "0. Autenticación",
+			"item": [
+				{
+					"name": "Obtener Token OAuth 2.0",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Guardar token automáticamente",
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set('bearer_token', jsonData.access_token);",
+									"    pm.environment.set('token_type', jsonData.token_type);",
+									"    pm.environment.set('expires_in', jsonData.expires_in);",
+									"    ",
+									"    // Calcular tiempo de expiración",
+									"    var expiryTime = new Date(Date.now() + (jsonData.expires_in * 1000));",
+									"    pm.environment.set('token_expiry', expiryTime.toISOString());",
+									"    ",
+									"    console.log('✓ Token guardado exitosamente');",
+									"    console.log('Expira en: ' + jsonData.expires_in + ' segundos');",
+									"    ",
+									"    pm.test('Token obtenido correctamente', function() {",
+									"        pm.expect(jsonData.access_token).to.be.a('string').and.not.empty;",
+									"    });",
+									"} else {",
+									"    pm.test('Error al obtener token', function() {",
+									"        pm.response.to.have.status(200);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "grant_type",
+									"value": "{{grant_type}}",
+									"type": "text"
+								},
+								{
+									"key": "client_id",
+									"value": "{{client_id}}",
+									"type": "text"
+								},
+								{
+									"key": "client_secret",
+									"value": "{{client_secret}}",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{auth_url}}",
+							"host": ["{{auth_url}}"]
+						},
+						"description": "Obtiene un Bearer Token mediante OAuth 2.0 Client Credentials"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "1. Casos Exitosos",
+			"item": [
+				{
+					"name": "POST - Crear guía con datos válidos",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code es 200 o 201', function() {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+									"});",
+									"",
+									"pm.test('Response contiene ID de guía', function() {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('id');",
+									"    pm.expect(jsonData.id).to.not.be.empty;",
+									"    ",
+									"    // Guardar ID para pruebas posteriores",
+									"    pm.environment.set('guia_id', jsonData.id);",
+									"});",
+									"",
+									"pm.test('Datos almacenados correctamente', function() {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.valor_recaudo).to.eql(50000);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Generar referencia única",
+									"pm.environment.set('timestamp', Date.now());"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"referencia_recaudo\": \"REF-{{timestamp}}\",\n  \"valor_recaudo\": 50000,\n  \"remitente\": {\n    \"nombre\": \"Juan Pérez García\",\n    \"direccion\": \"Calle 123 #45-67\",\n    \"ciudad\": \"Bogotá\",\n    \"telefono\": \"3001234567\",\n    \"email\": \"juan.perez@test.com\"\n  },\n  \"destinatario\": {\n    \"nombre\": \"María López Rodríguez\",\n    \"direccion\": \"Carrera 89 #12-34 Apto 501\",\n    \"ciudad\": \"Medellín\",\n    \"telefono\": \"3109876543\",\n    \"email\": \"maria.lopez@test.com\"\n  },\n  \"descripcion_contenido\": \"Documentos de prueba\",\n  \"peso\": 0.5,\n  \"observaciones\": \"Prueba manual - No procesar\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/guias",
+							"host": ["{{base_url}}"],
+							"path": ["guias"]
+						},
+						"description": "Crea una guía con todos los datos válidos"
+					},
+					"response": []
+				},
+				{
+					"name": "GET - Consultar guía por ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code es 200', function() {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response contiene los datos de la guía', function() {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('id');",
+									"    pm.expect(jsonData).to.have.property('referencia_recaudo');",
+									"    pm.expect(jsonData).to.have.property('valor_recaudo');",
+									"});",
+									"",
+									"pm.test('Tiempo de respuesta menor a 800ms', function() {",
+									"    pm.expect(pm.response.responseTime).to.be.below(800);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/guias/{{guia_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["guias", "{{guia_id}}"]
+						},
+						"description": "Consulta una guía previamente creada usando el ID guardado"
+					},
+					"response": []
+				},
+				{
+					"name": "POST - Guía con caracteres especiales",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Acepta caracteres especiales', function() {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+									"});",
+									"",
+									"pm.test('Nombres preservan caracteres especiales', function() {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.remitente.nombre).to.include('José');",
+									"    pm.expect(jsonData.remitente.nombre).to.include('Núñez');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"referencia_recaudo\": \"REF-CHARS-{{timestamp}}\",\n  \"valor_recaudo\": 30000,\n  \"remitente\": {\n    \"nombre\": \"José María Núñez O'Connor\",\n    \"direccion\": \"Calle 100 #20-30\",\n    \"ciudad\": \"Bogotá\",\n    \"telefono\": \"3001234567\"\n  },\n  \"destinatario\": {\n    \"nombre\": \"María Ángeles Rodríguez\",\n    \"direccion\": \"Carrera 50 #10-20\",\n    \"ciudad\": \"Medellín\",\n    \"telefono\": \"3109876543\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/guias",
+							"host": ["{{base_url}}"],
+							"path": ["guias"]
+						},
+						"description": "Prueba con caracteres especiales (Ñ, tildes, apóstrofes)"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "2. Valores Límite",
+			"item": [
+				{
+					"name": "POST - Valor mínimo ($1)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Acepta valor mínimo de $1', function() {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+									"});",
+									"",
+									"pm.test('Valor almacenado es 1', function() {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.valor_recaudo).to.eql(1);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"referencia_recaudo\": \"REF-MIN-{{timestamp}}\",\n  \"valor_recaudo\": 1,\n  \"remitente\": {\n    \"nombre\": \"Test User\",\n    \"direccion\": \"Calle 1\",\n    \"ciudad\": \"Bogotá\",\n    \"telefono\": \"3001234567\"\n  },\n  \"destinatario\": {\n    \"nombre\": \"Test Dest\",\n    \"direccion\": \"Calle 2\",\n    \"ciudad\": \"Medellín\",\n    \"telefono\": \"3109876543\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/guias",
+							"host": ["{{base_url}}"],
+							"path": ["guias"]
+						},
+						"description": "Prueba límite inferior exacto: $1"
+					},
+					"response": []
+				},
+				{
+					"name": "POST - Valor máximo ($16,000,000)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Acepta valor máximo de $16,000,000', function() {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+									"});",
+									"",
+									"pm.test('Valor almacenado es 16000000', function() {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.valor_recaudo).to.eql(16000000);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"referencia_recaudo\": \"REF-MAX-{{timestamp}}\",\n  \"valor_recaudo\": 16000000,\n  \"remitente\": {\n    \"nombre\": \"Test User\",\n    \"direccion\": \"Calle 1\",\n    \"ciudad\": \"Bogotá\",\n    \"telefono\": \"3001234567\"\n  },\n  \"destinatario\": {\n    \"nombre\": \"Test Dest\",\n    \"direccion\": \"Calle 2\",\n    \"ciudad\": \"Medellín\",\n    \"telefono\": \"3109876543\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/guias",
+							"host": ["{{base_url}}"],
+							"path": ["guias"]
+						},
+						"description": "Prueba límite superior exacto: $16,000,000"
+					},
+					"response": []
+				},
+				{
+					"name": "POST - Valor = $0 (debe fallar)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Rechaza valor cero', function() {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test('Response contiene mensaje de error', function() {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('error').or.to.have.property('mensaje');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"referencia_recaudo\": \"REF-ZERO-{{timestamp}}\",\n  \"valor_recaudo\": 0,\n  \"remitente\": {\n    \"nombre\": \"Test User\",\n    \"direccion\": \"Calle 1\",\n    \"ciudad\": \"Bogotá\",\n    \"telefono\": \"3001234567\"\n  },\n  \"destinatario\": {\n    \"nombre\": \"Test Dest\",\n    \"direccion\": \"Calle 2\",\n    \"ciudad\": \"Medellín\",\n    \"telefono\": \"3109876543\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/guias",
+							"host": ["{{base_url}}"],
+							"path": ["guias"]
+						},
+						"description": "Prueba valor justo debajo del mínimo"
+					},
+					"response": []
+				},
+				{
+					"name": "POST - Valor > $16M (debe fallar)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Rechaza valor sobre el máximo', function() {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test('Mensaje indica límite máximo', function() {",
+									"    var jsonData = pm.response.json();",
+									"    var mensaje = JSON.stringify(jsonData).toLowerCase();",
+									"    pm.expect(mensaje).to.include('16000000').or.to.include('máximo').or.to.include('maximo');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"referencia_recaudo\": \"REF-OVER-{{timestamp}}\",\n  \"valor_recaudo\": 16000001,\n  \"remitente\": {\n    \"nombre\": \"Test User\",\n    \"direccion\": \"Calle 1\",\n    \"ciudad\": \"Bogotá\",\n    \"telefono\": \"3001234567\"\n  },\n  \"destinatario\": {\n    \"nombre\": \"Test Dest\",\n    \"direccion\": \"Calle 2\",\n    \"ciudad\": \"Medellín\",\n    \"telefono\": \"3109876543\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/guias",
+							"host": ["{{base_url}}"],
+							"path": ["guias"]
+						},
+						"description": "Prueba valor justo arriba del máximo"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "3. Campos Obligatorios",
+			"item": [
+				{
+					"name": "POST - Sin referencia_recaudo",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Rechaza sin referencia_recaudo', function() {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test('Mensaje indica campo obligatorio', function() {",
+									"    var jsonData = pm.response.json();",
+									"    var mensaje = JSON.stringify(jsonData).toLowerCase();",
+									"    pm.expect(mensaje).to.include('referencia').or.to.include('obligatorio').or.to.include('requerido');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"valor_recaudo\": 50000,\n  \"remitente\": {\n    \"nombre\": \"Test User\",\n    \"direccion\": \"Calle 1\",\n    \"ciudad\": \"Bogotá\",\n    \"telefono\": \"3001234567\"\n  },\n  \"destinatario\": {\n    \"nombre\": \"Test Dest\",\n    \"direccion\": \"Calle 2\",\n    \"ciudad\": \"Medellín\",\n    \"telefono\": \"3109876543\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/guias",
+							"host": ["{{base_url}}"],
+							"path": ["guias"]
+						},
+						"description": "Intenta crear guía sin referencia de recaudo"
+					},
+					"response": []
+				},
+				{
+					"name": "POST - Sin valor_recaudo",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Rechaza sin valor_recaudo', function() {",
+									"    pm.response.to.have.status(400);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"referencia_recaudo\": \"REF-NO-VALOR-{{timestamp}}\",\n  \"remitente\": {\n    \"nombre\": \"Test User\",\n    \"direccion\": \"Calle 1\",\n    \"ciudad\": \"Bogotá\",\n    \"telefono\": \"3001234567\"\n  },\n  \"destinatario\": {\n    \"nombre\": \"Test Dest\",\n    \"direccion\": \"Calle 2\",\n    \"ciudad\": \"Medellín\",\n    \"telefono\": \"3109876543\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/guias",
+							"host": ["{{base_url}}"],
+							"path": ["guias"]
+						},
+						"description": "Intenta crear guía sin valor de recaudo"
+					},
+					"response": []
+				},
+				{
+					"name": "POST - Sin remitente",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Rechaza sin remitente', function() {",
+									"    pm.response.to.have.status(400);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"referencia_recaudo\": \"REF-NO-REM-{{timestamp}}\",\n  \"valor_recaudo\": 50000,\n  \"destinatario\": {\n    \"nombre\": \"Test Dest\",\n    \"direccion\": \"Calle 2\",\n    \"ciudad\": \"Medellín\",\n    \"telefono\": \"3109876543\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/guias",
+							"host": ["{{base_url}}"],
+							"path": ["guias"]
+						},
+						"description": "Intenta crear guía sin datos de remitente"
+					},
+					"response": []
+				},
+				{
+					"name": "POST - Sin destinatario",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Rechaza sin destinatario', function() {",
+									"    pm.response.to.have.status(400);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"referencia_recaudo\": \"REF-NO-DEST-{{timestamp}}\",\n  \"valor_recaudo\": 50000,\n  \"remitente\": {\n    \"nombre\": \"Test User\",\n    \"direccion\": \"Calle 1\",\n    \"ciudad\": \"Bogotá\",\n    \"telefono\": \"3001234567\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/guias",
+							"host": ["{{base_url}}"],
+							"path": ["guias"]
+						},
+						"description": "Intenta crear guía sin datos de destinatario"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "4. Manejo de Errores",
+			"item": [
+				{
+					"name": "GET - ID inexistente (404)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Retorna 404 para ID inexistente', function() {",
+									"    pm.response.to.have.status(404);",
+									"});",
+									"",
+									"pm.test('Mensaje indica guía no encontrada', function() {",
+									"    var jsonData = pm.response.json();",
+									"    var mensaje = JSON.stringify(jsonData).toLowerCase();",
+									"    pm.expect(mensaje).to.include('not found').or.to.include('no encontrada');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/guias/99999999999",
+							"host": ["{{base_url}}"],
+							"path": ["guias", "99999999999"]
+						},
+						"description": "Intenta consultar guía con ID que no existe"
+					},
+					"response": []
+				},
+				{
+					"name": "POST - Referencia excede límite",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Rechaza referencia muy larga', function() {",
+									"    pm.response.to.have.status(400);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"referencia_recaudo\": \"REF-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\",\n  \"valor_recaudo\": 50000,\n  \"remitente\": {\n    \"nombre\": \"Test User\",\n    \"direccion\": \"Calle 1\",\n    \"ciudad\": \"Bogotá\",\n    \"telefono\": \"3001234567\"\n  },\n  \"destinatario\": {\n    \"nombre\": \"Test Dest\",\n    \"direccion\": \"Calle 2\",\n    \"ciudad\": \"Medellín\",\n    \"telefono\": \"3109876543\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/guias",
+							"host": ["{{base_url}}"],
+							"path": ["guias"]
+						},
+						"description": "Intenta crear guía con referencia excesivamente larga (500+ caracteres)"
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Auto-refresh token si está por expirar",
+					"const tokenExpiry = pm.environment.get('token_expiry');",
+					"if (tokenExpiry) {",
+					"    const expiryTime = new Date(tokenExpiry);",
+					"    const now = new Date();",
+					"    const timeUntilExpiry = expiryTime - now;",
+					"    ",
+					"    // Si quedan menos de 5 minutos, renovar",
+					"    if (timeUntilExpiry < 300000) {",
+					"        console.log('⚠ Token está por expirar, renovar manualmente');",
+					"    }",
+					"}",
+					"",
+					"// Generar timestamp para referencias únicas",
+					"if (!pm.environment.get('timestamp')) {",
+					"    pm.environment.set('timestamp', Date.now());",
+					"}"
+				]
+			}
+		}
+	]
+}
+

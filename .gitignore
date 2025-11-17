@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Test results
+reports/
+test-results/
+playwright-report/
+playwright/.cache/
+
+# Videos and screenshots
+videos/
+screenshots/
+
+# Build output
+dist/
+build/
+*.js
+*.js.map
+!load-tests/**/*.js
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# K6 results
+load-tests/reports/*.html
+load-tests/reports/*.json
+
