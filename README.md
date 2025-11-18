@@ -229,6 +229,27 @@ npm run stress-test
 - Duración: 1 minuto
 - Objetivo: Identificar punto de falla
 
+#### Pruebas con Dashboard en Tiempo Real
+
+Para ejecutar las pruebas con el dashboard web de k6 activo (visualización en tiempo real):
+
+**Prueba de Carga con Dashboard:**
+```bash
+K6_WEB_DASHBOARD=true ./load-tests/scripts/run-k6.sh load-test.js
+```
+
+**Prueba de Estrés con Dashboard:**
+```bash
+K6_WEB_DASHBOARD=true ./load-tests/scripts/run-k6.sh stress-test.js
+```
+
+El dashboard se abrirá automáticamente en tu navegador mostrando métricas en tiempo real como:
+- Tiempo de respuesta (promedio, p95, p99)
+- Requests por segundo (RPS)
+- Tasa de errores
+- Usuarios virtuales activos
+- Gráficos de rendimiento
+
 **Ver documentación completa:** [`load-tests/README.md`](load-tests/README.md)
 
 ---
