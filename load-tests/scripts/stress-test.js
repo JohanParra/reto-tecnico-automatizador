@@ -47,6 +47,16 @@ export const options = {
 export function setup() {
   console.log('🔐 Obteniendo token de autenticación para prueba de estrés...');
   
+  // Validar que las variables de entorno estén configuradas
+  if (!config.auth.url || !config.auth.clientId || !config.auth.clientSecret) {
+    console.error('❌ Error: Variables de autenticación no configuradas');
+    console.error('   AUTH_URL:', config.auth.url || '❌ NO CONFIGURADO');
+    console.error('   CLIENT_ID:', config.auth.clientId || '❌ NO CONFIGURADO');
+    console.error('   CLIENT_SECRET:', config.auth.clientSecret ? '***' : '❌ NO CONFIGURADO');
+    console.error('\n💡 Asegúrate de tener un archivo .env en la raíz del proyecto con estas variables.');
+    return { token: null };
+  }
+  
   const authPayload = {
     grant_type: config.auth.grantType,
     client_id: config.auth.clientId,
@@ -67,6 +77,7 @@ export function setup() {
     return { token: token };
   } else {
     console.error('✗ Error al obtener token:', authResponse.status);
+    console.error('   Respuesta:', authResponse.body);
     return { token: null };
   }
 }

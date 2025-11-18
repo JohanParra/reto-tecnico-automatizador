@@ -9,8 +9,8 @@
         "test:debug": "playwright test --debug",
         "test:ui": "playwright test --ui",
         "report": "playwright show-report",
-        "load-test": "k6 run load-tests/scripts/load-test.js",
-        "stress-test": "k6 run load-tests/scripts/stress-test.js"
+        "load-test": "node load-tests/scripts/run-k6.js load-tests/scripts/load-test.js",
+        "stress-test": "node load-tests/scripts/run-k6.js load-tests/scripts/stress-test.js"
     },
     "keywords": [
         "automation",
