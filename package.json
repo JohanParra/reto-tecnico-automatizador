@@ -1,39 +1,38 @@
 {
-  "name": "reto-tecnico-automatizador",
-  "version": "1.0.0",
-  "description": "Suite de automatización de pruebas para API de guías logísticas con RCE - Coordinadora",
-  "main": "index.js",
-  "scripts": {
-    "test": "playwright test",
-    "test:headed": "playwright test --headed",
-    "test:debug": "playwright test --debug",
-    "test:ui": "playwright test --ui",
-    "report": "playwright show-report",
-    "load-test": "k6 run load-tests/scripts/load-test.js",
-    "stress-test": "k6 run load-tests/scripts/stress-test.js"
-  },
-  "keywords": [
-    "automation",
-    "testing",
-    "playwright",
-    "serenity-js",
-    "screenplay",
-    "api-testing"
-  ],
-  "author": "Johan Parra",
-  "license": "MIT",
-  "devDependencies": {
-    "@playwright/test": "^1.40.0",
-    "@serenity-js/console-reporter": "^3.10.0",
-    "@serenity-js/core": "^3.10.0",
-    "@serenity-js/rest": "^3.10.0",
-    "@serenity-js/playwright": "^3.10.0",
-    "@types/node": "^20.10.0",
-    "dotenv": "^16.3.1",
-    "typescript": "^5.3.2"
-  },
-  "engines": {
-    "node": ">=18.0.0"
-  }
+    "name": "reto-tecnico-automatizador",
+    "version": "1.0.0",
+    "description": "Suite de automatización de pruebas para API de guías logísticas con RCE - Coordinadora",
+    "main": "index.js",
+    "scripts": {
+        "test": "playwright test",
+        "test:headed": "playwright test --headed",
+        "test:debug": "playwright test --debug",
+        "test:ui": "playwright test --ui",
+        "report": "playwright show-report",
+        "load-test": "k6 run load-tests/scripts/load-test.js",
+        "stress-test": "k6 run load-tests/scripts/stress-test.js"
+    },
+    "keywords": [
+        "automation",
+        "testing",
+        "playwright",
+        "serenity-js",
+        "screenplay",
+        "api-testing"
+    ],
+    "author": "Johan Parra",
+    "license": "MIT",
+    "devDependencies": {
+        "@playwright/test": "^1.40.0",
+        "@serenity-js/console-reporter": "^3.10.0",
+        "@serenity-js/core": "^3.10.0",
+        "@serenity-js/rest": "^3.10.0",
+        "@serenity-js/playwright": "^3.10.0",
+        "@types/node": "^20.10.0",
+        "dotenv": "^16.3.1",
+        "typescript": "^5.3.2"
+    },
+    "engines": {
+        "node": ">=18.0.0"
+    }
 }
-
